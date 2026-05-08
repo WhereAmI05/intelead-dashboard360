@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Intelead Finance - Regulation</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header"><div class="logo"><h2>FinancePilot 360</h2><p>by Intelead SARL</p></div></div>
+            <nav class="nav-menu">
+                <a href="dashboard.html" class="nav-item">Tableau de bord</a>
+                <a href="regul.html" class="nav-item">Regulation</a>
+                <a href="salesx.html" class="nav-item">SalesX</a>
+                <a href="nora.html" class="nav-item">NORA</a>
+                <a href="tresorerie.html" class="nav-item">Tresorerie</a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="page-header"><h1>Regulation fiscale et sociale</h1><p>Obligations 2024-2025</p></div>
+            <div class="kpi-grid" id="kpiGrid"></div>
+
+            <div class="filters-bar">
+                <div class="filters-left">
+                    <div class="filter-group"><label>Recherche</label><input type="text" id="searchInput" class="search-input" placeholder="Nom..."></div>
+                    <div class="filter-group"><label>Risque</label><select id="riskFilter" class="filter-select"><option value="all">Tous</option><option value="critique">Critique</option><option value="eleve">Eleve</option></select></div>
+                </div>
+                <div>
+                    <button class="btn btn-primary" onclick="openModal('addModal')">Ajouter</button>
+                    <button class="btn btn-secondary" onclick="exportModuleCSV('obligation')">Exporter CSV</button>
+                    <button class="btn btn-secondary" onclick="exportAllToJSON()">Exporter JSON</button>
+                    <input type="file" id="importFile" style="display:none" accept=".csv,.json" onchange="importFromFile(this.files[0], 'obligation')">
+                    <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">Importer</button>
+                </div>
+            </div>
+
+            <div class="data-card">
+                <div class="card-title">Liste des obligations</div>
+                <div class="table-wrapper">
+                    <table class="data-table">
+                        <thead><tr><th>Obligation</th><th>Entite</th><th>Type</th><th>Statut</th><th>Echeance</th><th>Risque</th><th>Horizon</th><th>Actions</th></tr></thead>
+                        <tbody id="tableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal Ajout -->
+    <div id="addModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header"><h3>Ajouter obligation</h3><button class="modal-close" onclick="closeModal('addModal')">&times;</button></div>
+            <div class="modal-body">
+                <div class="form-group"><label>Obligation</label><input type="text" id="newObligation"></div>
+                <div class="form-group"><label>Entite</label><select id="newEntite"><option>SalesFlow</option><option>Intelead</option><option>Groupe</option></select></div>
+                <div class="form-group"><label>Type</label><select id="newType"><option>Bilan</option><option>Fiscal</option><option>Social</option></select></div>
+                <div class="form-group"><label>Risque</label><select id="newRisque"><option value="critical">Critique (rouge)</option><option value="high">Eleve (orange)</option><option value="medium">Moyen (bleu)</option></select></div>
+            </div>
+            <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('addModal')">Annuler</button><button class="btn btn-primary" onclick="addObligation()">Ajouter</button></div>
+        </div>
+    </div>
+
+    <!-- Modal Edition -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header"><h3>Modifier obligation</h3><button class="modal-close" onclick="closeModal('editModal')">&times;</button></div>
+            <div class="modal-body">
+                <div class="form-group"><label>Obligation</label><input type="text" id="editObligation"></div>
+                <div class="form-group"><label>Entite</label><select id="editEntite"><option>SalesFlow</option><option>Intelead</option><option>Groupe</option></select></div>
+                <div class="form-group"><label>Type</label><select id="editType"><option>Bilan</option><option>Fiscal</option><option>Social</option></select></div>
+                <div class="form-group"><label>Statut</label><select id="editStatut"><option>Non declare</option><option>En cours</option><option>Declare</option></select></div>
+                <div class="form-group"><label>Risque</label><select id="editRisque"><option value="critical">Critique (rouge)</option><option value="high">Eleve (orange)</option><option value="medium">Moyen (bleu)</option></select></div>
+            </div>
+            <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('editModal')">Annuler</button><button class="btn btn-primary" onclick="saveEdit()">Enregistrer</button></div>
+        </div>
+    </div>
+
+    <script src="data.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

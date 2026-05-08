@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Intelead Finance - NORA</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header"><div class="logo"><h2>FinancePilot 360</h2><p>by Intelead SARL</p></div></div>
+            <nav class="nav-menu">
+                <a href="dashboard.html" class="nav-item">Tableau de bord</a>
+                <a href="regul.html" class="nav-item">Regulation</a>
+                <a href="salesx.html" class="nav-item">SalesX</a>
+                <a href="nora.html" class="nav-item">NORA</a>
+                <a href="tresorerie.html" class="nav-item">Tresorerie</a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="page-header"><h1>NORA Academie</h1><p>Factures et rentabilite</p></div>
+            <div class="kpi-grid" id="kpiGrid"></div>
+
+            <div class="filters-bar">
+                <div class="filters-left">
+                    <div class="filter-group"><label>Recherche</label><input type="text" id="searchInput" class="search-input" placeholder="Client..."></div>
+                    <div class="filter-group"><label>Statut</label><select id="statutFilter" class="filter-select"><option value="all">Tous</option><option value="paye">Paye</option><option value="impaye">Impaye</option></select></div>
+                </div>
+                <div>
+                    <button class="btn btn-primary" onclick="openModal('addModal')">Ajouter</button>
+                    <button class="btn btn-secondary" onclick="exportModuleCSV('nora')">Exporter CSV</button>
+                    <button class="btn btn-secondary" onclick="exportAllToJSON()">Exporter JSON</button>
+                    <input type="file" id="importFile" style="display:none" accept=".csv,.json" onchange="importFromFile(this.files[0], 'nora')">
+                    <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">Importer</button>
+                </div>
+            </div>
+
+            <div class="data-card">
+                <div class="card-title">Factures B2B</div>
+                <div class="table-wrapper">
+                    <table class="data-table">
+                        <thead><tr><th>Client</th><th>Secteur</th><th>CA HT</th><th>Encaissé</th><th>Reste</th><th>Statut</th><th>Date</th><th>Actions</th></tr></thead>
+                        <tbody id="facturesTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="alert alert-info">Couts a ventiler: ONCF, Hotel, Prestataires, OpenAI (65k MAD)</div>
+        </main>
+    </div>
+
+    <!-- Modal Ajout -->
+    <div id="addModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header"><h3>Ajouter facture</h3><button class="modal-close" onclick="closeModal('addModal')">&times;</button></div>
+            <div class="modal-body">
+                <div class="form-group"><label>Client</label><input type="text" id="newClient"></div>
+                <div class="form-group"><label>CA HT (MAD)</label><input type="number" id="newCa"></div>
+            </div>
+            <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('addModal')">Annuler</button><button class="btn btn-primary" onclick="addFacture()">Ajouter</button></div>
+        </div>
+    </div>
+
+    <!-- Modal Edition -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header"><h3>Modifier facture</h3><button class="modal-close" onclick="closeModal('editModal')">&times;</button></div>
+            <div class="modal-body">
+                <div class="form-group"><label>Client</label><input type="text" id="editClient"></div>
+                <div class="form-group"><label>Secteur</label><select id="editSecteur"><option>Industrie</option><option>Telecom</option><option>Education</option><option>Conseil</option><option>Autre</option></select></div>
+                <div class="form-group"><label>CA HT (MAD)</label><input type="number" id="editCaHt"></div>
+                <div class="form-group"><label>Encaissé (MAD)</label><input type="number" id="editEncaisse"></div>
+            </div>
+            <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('editModal')">Annuler</button><button class="btn btn-primary" onclick="saveEdit()">Enregistrer</button></div>
+        </div>
+    </div>
+
+    <script src="data.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

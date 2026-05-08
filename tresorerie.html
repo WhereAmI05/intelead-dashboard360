@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Intelead Finance - Tresorerie</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .action-buttons {
+            display: flex;
+            gap: 6px;
+        }
+        .btn-icon {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        .btn-icon.edit { color: #3b82f6; }
+        .btn-icon.edit:hover { background: #dbeafe; }
+        .btn-icon.delete { color: #dc2626; }
+        .btn-icon.delete:hover { background: #fee2e2; }
+        .btn-sm {
+            padding: 4px 12px;
+            font-size: 11px;
+        }
+        .tresorerie-summary {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .summary-card {
+            background: white;
+            border-radius: 16px;
+            padding: 16px;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+        }
+        .summary-label {
+            font-size: 11px;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .summary-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #0f3b5c;
+            margin-top: 8px;
+        }
+        .summary-trend {
+            font-size: 11px;
+            margin-top: 6px;
+        }
+        .trend-up { color: #10b981; }
+        .trend-down { color: #ef4444; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <h2>FinancePilot 360</h2>
+                    <p>by Intelead SARL</p>
+                </div>
+            </div>
+            <nav class="nav-menu">
+                <a href="dashboard.html" class="nav-item">Tableau de bord</a>
+                <a href="regul.html" class="nav-item">Regulation</a>
+                <a href="salesx.html" class="nav-item">SalesX</a>
+                <a href="nora.html" class="nav-item">NORA</a>
+                <a href="tresorerie.html" class="nav-item active">Tresorerie</a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="page-header">
+                <div>
+                    <h1>Analyse de tresorerie</h1>
+                    <p>Gestion des flux financiers mensuels 2024-2025</p>
+                </div>
+                <div class="intelead-badge">Intelead SARL - Casablanca</div>
+            </div>
+
+            <!-- KPIs Summary -->
+            <div class="tresorerie-summary" id="summaryGrid"></div>
+
+            <!-- Charts Row -->
+            <div class="charts-row">
+                <div class="chart-card">
+                    <div class="chart-title">Depenses par categorie</div>
+                    <canvas id="depensesChart" height="200"></canvas>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-title">Evolution mensuelle</div>
+                    <canvas id="evolutionChart" height="200"></canvas>
+                </div>
+            </div>
+
+            <!-- Filters and Actions -->
+            <div class="filters-bar">
+                <div class="filters-left">
+                    <div class="filter-group">
+                        <label>Recherche</label>
+                        <input type="text" id="searchInput" class="search-input" placeholder="Mois...">
+                    </div>
+                    <div class="filter-group">
+                        <label>Annee</label>
+                        <select id="yearFilter" class="filter-select">
+                            <option value="all">Toutes</option>
+                            <option value="2024">2024</option>
+                            <option value="2025">2025</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <button class="btn btn-primary" onclick="openAddModal()">Ajouter un mois</button>
+                    <button class="btn btn-secondary" onclick="exportTresorerieCSV()">Exporter CSV</button>
+                    <button class="btn btn-secondary" onclick="exportTresorerieJSON()">Exporter JSON</button>
+                    <input type="file" id="importFile" style="display:none" accept=".csv,.json" onchange="importTresorerieFile(this.files[0])">
+                    <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">Importer</button>
+                </div>
+            </div>
+
+            <!-- Monthly Data Table -->
+            <div class="data-card">
+                <div class="card-title">Flux mensuels</div>
+                <div class="table-wrapper">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Mois</th>
+                                <th>Encaissements (MAD)</th>
+                                <th>Depenses (MAD)</th>
+                                <th>Net (MAD)</th>
+                                <th>Tendance</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tresorerieTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Yearly Summary -->
+            <div class="data-card">
+                <div class="card-title">Bilan annuel</div>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
+                    <div id="year2024Summary" style="background:#f8fafc; border-radius:12px; padding:16px; text-align:center"></div>
+                    <div id="year2025Summary" style="background:#f8fafc; border-radius:12px; padding:16px; text-align:center"></div>
+                </div>
+            </div>
+
+            <!-- Alerts -->
+            <div class="alert alert-warning" id="alertNetNegatif" style="display:none">
+                Net 2025 negatif - Surveiller les depenses H2 2025
+            </div>
+            <div class="alert alert-info">
+                Poste "Autres depenses": 1.3M MAD (62% du total) - Ventilation recommandee
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal Ajout -->
+    <div id="addModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Ajouter un mois</h3>
+                <button class="modal-close" onclick="closeModal('addModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Mois</label>
+                    <input type="text" id="newMois" placeholder="Ex: Janv 2025">
+                </div>
+                <div class="form-group">
+                    <label>Encaissements (MAD)</label>
+                    <input type="number" id="newEncaissements" value="0">
+                </div>
+                <div class="form-group">
+                    <label>Depenses (MAD)</label>
+                    <input type="number" id="newDepenses" value="0">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('addModal')">Annuler</button>
+                <button class="btn btn-primary" onclick="addTresorerieItem()">Ajouter</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Edition -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Modifier le mois</h3>
+                <button class="modal-close" onclick="closeModal('editModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Mois</label>
+                    <input type="text" id="editMois">
+                </div>
+                <div class="form-group">
+                    <label>Encaissements (MAD)</label>
+                    <input type="number" id="editEncaissements">
+                </div>
+                <div class="form-group">
+                    <label>Depenses (MAD)</label>
+                    <input type="number" id="editDepenses">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('editModal')">Annuler</button>
+                <button class="btn btn-primary" onclick="saveTresorerieEdit()">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="data.js"></script>
+    <script>
+        let currentEditId = null;
+        let tresorerieCharts = {};
+
+        // ============================================================
+        // INITIALISATION
+        // ============================================================
+        document.addEventListener('DOMContentLoaded', function() {
+            loadTresorerieData();
+            initFilters();
+        });
+
+        function initFilters() {
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) searchInput.addEventListener('input', filterTresorerieTable);
+            
+            const yearFilter = document.getElementById('yearFilter');
+            if (yearFilter) yearFilter.addEventListener('change', filterTresorerieTable);
+        }
+
+        function filterTresorerieTable() {
+            const searchTerm = document.getElementById('searchInput')?.value.toLowerCase() || '';
+            const yearFilter = document.getElementById('yearFilter')?.value || 'all';
+            
+            const rows = document.querySelectorAll('#tresorerieTableBody tr');
+            rows.forEach(row => {
+                let show = true;
+                const mois = row.cells[0]?.innerText.toLowerCase() || '';
+                if (searchTerm && !mois.includes(searchTerm)) show = false;
+                if (yearFilter !== 'all' && !mois.includes(yearFilter)) show = false;
+                row.style.display = show ? '' : 'none';
+            });
+        }
+
+        // ============================================================
+        // CHARGEMENT DES DONNEES
+        // ============================================================
+        function loadTresorerieData() {
+            updateSummary();
+            updateTable();
+            updateCharts();
+            updateYearlySummary();
+        }
+
+        function updateSummary() {
+            const kpis = APP_DATA.kpis;
+            const net2024 = APP_DATA.tresorerieMensuelle.filter(t => t.mois.includes('2024')).reduce((s,i) => s + (i.encaissements - i.depenses), 0);
+            const net2025 = APP_DATA.tresorerieMensuelle.filter(t => t.mois.includes('2025')).reduce((s,i) => s + (i.encaissements - i.depenses), 0);
+            
+            document.getElementById('summaryGrid').innerHTML = `
+                <div class="summary-card">
+                    <div class="summary-label">Encaissements totaux</div>
+                    <div class="summary-value">${kpis.encaissementsTotal.toLocaleString()} MAD</div>
+                    <div class="summary-trend trend-up">▲ Total 2024-2025</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-label">Depenses totales</div>
+                    <div class="summary-value">${kpis.depensesTotal.toLocaleString()} MAD</div>
+                    <div class="summary-trend trend-down">▼ Total 2024-2025</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-label">Resultat 2024</div>
+                    <div class="summary-value ${net2024 >= 0 ? 'trend-up' : 'trend-down'}">${net2024.toLocaleString()} MAD</div>
+                    <div class="summary-trend">${net2024 >= 0 ? 'Excedent' : 'Deficit'}</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-label">Resultat 2025</div>
+                    <div class="summary-value ${net2025 >= 0 ? 'trend-up' : 'trend-down'}">${net2025.toLocaleString()} MAD</div>
+                    <div class="summary-trend">${net2025 >= 0 ? 'Excedent' : 'Deficit'}</div>
+                </div>
+            `;
+            
+            // Afficher l'alerte si net 2025 negatif
+            const alertDiv = document.getElementById('alertNetNegatif');
+            if (alertDiv) alertDiv.style.display = net2025 < 0 ? 'block' : 'none';
+        }
+
+        function updateTable() {
+            const tableBody = document.getElementById('tresorerieTableBody');
+            tableBody.innerHTML = APP_DATA.tresorerieMensuelle.map((item, index) => {
+                const net = item.encaissements - item.depenses;
+                const trendClass = net >= 0 ? 'trend-up' : 'trend-down';
+                const trendIcon = net >= 0 ? '▲' : '▼';
+                return `
+                    <tr data-id="${index}">
+                        <td>${item.mois}</td>
+                        <td>${item.encaissements.toLocaleString()} MAD</td>
+                        <td>${item.depenses.toLocaleString()} MAD</td>
+                        <td class="${trendClass}">${net.toLocaleString()} MAD</td>
+                        <td><span class="${trendClass}">${trendIcon} ${Math.abs(net).toLocaleString()} MAD</span></td>
+                        <td class="actions-cell">
+                            <button class="btn-edit" onclick="openEditModal(${index})">Modifier</button>
+                            <button class="btn-delete" onclick="deleteTresorerieItem(${index})">Supprimer</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function updateYearlySummary() {
+            const data2024 = APP_DATA.tresorerieMensuelle.filter(t => t.mois.includes('2024'));
+            const data2025 = APP_DATA.tresorerieMensuelle.filter(t => t.mois.includes('2025'));
+            
+            const enc2024 = data2024.reduce((s,i) => s + i.encaissements, 0);
+            const dep2024 = data2024.reduce((s,i) => s + i.depenses, 0);
+            const enc2025 = data2025.reduce((s,i) => s + i.encaissements, 0);
+            const dep2025 = data2025.reduce((s,i) => s + i.depenses, 0);
+            
+            document.getElementById('year2024Summary').innerHTML = `
+                <strong style="font-size:16px;">2024</strong>
+                <div style="margin-top:12px">
+                    <div>Encaissements: <strong>${enc2024.toLocaleString()} MAD</strong></div>
+                    <div>Depenses: <strong>${dep2024.toLocaleString()} MAD</strong></div>
+                    <div style="margin-top:8px; padding-top:8px; border-top:1px solid #e2e8f0">
+                        Net: <strong class="${enc2024-dep2024 >= 0 ? 'trend-up' : 'trend-down'}">${(enc2024-dep2024).toLocaleString()} MAD</strong>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('year2025Summary').innerHTML = `
+                <strong style="font-size:16px;">2025</strong>
+                <div style="margin-top:12px">
+                    <div>Encaissements: <strong>${enc2025.toLocaleString()} MAD</strong></div>
+                    <div>Depenses: <strong>${dep2025.toLocaleString()} MAD</strong></div>
+                    <div style="margin-top:8px; padding-top:8px; border-top:1px solid #e2e8f0">
+                        Net: <strong class="${enc2025-dep2025 >= 0 ? 'trend-up' : 'trend-down'}">${(enc2025-dep2025).toLocaleString()} MAD</strong>
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateCharts() {
+            // Graphique depenses
+            const ctxDep = document.getElementById('depensesChart')?.getContext('2d');
+            if (ctxDep && tresorerieCharts.depenses) tresorerieCharts.depenses.destroy();
+            if (ctxDep) {
+                tresorerieCharts.depenses = new Chart(ctxDep, {
+                    type: 'doughnut',
+                    data: {
+                        labels: APP_DATA.depensesCategories.map(c => c.categorie),
+                        datasets: [{
+                            data: APP_DATA.depensesCategories.map(c => c.montant),
+                            backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec489a', '#06b6d4', '#6b7280'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'right', labels: { font: { size: 10 } } } } }
+                });
+            }
+            
+            // Graphique evolution
+            const ctxEvol = document.getElementById('evolutionChart')?.getContext('2d');
+            if (ctxEvol && tresorerieCharts.evolution) tresorerieCharts.evolution.destroy();
+            if (ctxEvol) {
+                tresorerieCharts.evolution = new Chart(ctxEvol, {
+                    type: 'line',
+                    data: {
+                        labels: APP_DATA.tresorerieMensuelle.map(t => t.mois),
+                        datasets: [
+                            { label: 'Encaissements', data: APP_DATA.tresorerieMensuelle.map(t => t.encaissements), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.05)', fill: true, tension: 0.3, pointRadius: 3 },
+                            { label: 'Depenses', data: APP_DATA.tresorerieMensuelle.map(t => t.depenses), borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.05)', fill: true, tension: 0.3, pointRadius: 3 }
+                        ]
+                    },
+                    options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'top', labels: { font: { size: 10 } } } } }
+                });
+            }
+        }
+
+        // ============================================================
+        // CRUD OPERATIONS
+        // ============================================================
+        function openAddModal() {
+            document.getElementById('newMois').value = '';
+            document.getElementById('newEncaissements').value = 0;
+            document.getElementById('newDepenses').value = 0;
+            openModal('addModal');
+        }
+
+        function addTresorerieItem() {
+            const mois = document.getElementById('newMois')?.value;
+            const encaissements = parseFloat(document.getElementById('newEncaissements')?.value) || 0;
+            const depenses = parseFloat(document.getElementById('newDepenses')?.value) || 0;
+            
+            if (!mois) {
+                showNotification("Veuillez entrer un mois", "error");
+                return;
+            }
+            
+            APP_DATA.tresorerieMensuelle.push({
+                mois: mois,
+                encaissements: encaissements,
+                depenses: depenses
+            });
+            
+            // Trier par ordre chronologique
+            APP_DATA.tresorerieMensuelle.sort((a,b) => {
+                const dateA = a.mois.split(' ')[1] + a.mois.split(' ')[0];
+                const dateB = b.mois.split(' ')[1] + b.mois.split(' ')[0];
+                return dateA.localeCompare(dateB);
+            });
+            
+            updateKPIs();
+            loadTresorerieData();
+            closeModal('addModal');
+            showNotification("Mois ajoute", "success");
+        }
+
+        function openEditModal(index) {
+            currentEditId = index;
+            const item = APP_DATA.tresorerieMensuelle[index];
+            document.getElementById('editMois').value = item.mois;
+            document.getElementById('editEncaissements').value = item.encaissements;
+            document.getElementById('editDepenses').value = item.depenses;
+            openModal('editModal');
+        }
+
+        function saveTresorerieEdit() {
+            if (currentEditId !== null) {
+                APP_DATA.tresorerieMensuelle[currentEditId] = {
+                    mois: document.getElementById('editMois').value,
+                    encaissements: parseFloat(document.getElementById('editEncaissements').value) || 0,
+                    depenses: parseFloat(document.getElementById('editDepenses').value) || 0
+                };
+                updateKPIs();
+                loadTresorerieData();
+                closeModal('editModal');
+                showNotification("Mois modifie", "success");
+                currentEditId = null;
+            }
+        }
+
+        function deleteTresorerieItem(index) {
+            if (confirm("Supprimer ce mois ?")) {
+                APP_DATA.tresorerieMensuelle.splice(index, 1);
+                updateKPIs();
+                loadTresorerieData();
+                showNotification("Mois supprime", "success");
+            }
+        }
+
+        // ============================================================
+        // IMPORT/EXPORT
+        // ============================================================
+        function exportTresorerieCSV() {
+            const headers = ['mois', 'encaissements', 'depenses'];
+            let csvRows = [headers.join(',')];
+            for (const row of APP_DATA.tresorerieMensuelle) {
+                csvRows.push(`"${row.mois}",${row.encaissements},${row.depenses}`);
+            }
+            const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `tresorerie_${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showNotification("Export CSV termine", "success");
+        }
+
+        function exportTresorerieJSON() {
+            const data = { tresorerie: APP_DATA.tresorerieMensuelle };
+            const jsonStr = JSON.stringify(data, null, 2);
+            const blob = new Blob([jsonStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `tresorerie_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showNotification("Export JSON termine", "success");
+        }
+
+        function importTresorerieFile(file) {
+            if (!file) return;
+            const extension = file.name.split('.').pop().toLowerCase();
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                try {
+                    let importedData;
+                    if (extension === 'csv') {
+                        const text = e.target.result;
+                        const rows = text.split('\n');
+                        const headers = rows[0].split(',').map(h => h.replace(/"/g, '').trim());
+                        importedData = [];
+                        for (let i = 1; i < rows.length; i++) {
+                            if (rows[i].trim()) {
+                                const values = rows[i].split(',').map(v => v.replace(/"/g, '').trim());
+                                if (values.length >= 3) {
+                                    importedData.push({
+                                        mois: values[0],
+                                        encaissements: parseFloat(values[1]) || 0,
+                                        depenses: parseFloat(values[2]) || 0
+                                    });
+                                }
+                            }
+                        }
+                    } else {
+                        const json = JSON.parse(e.target.result);
+                        importedData = json.tresorerie || json;
+                    }
+                    
+                    if (importedData && importedData.length > 0) {
+                        APP_DATA.tresorerieMensuelle = importedData;
+                        updateKPIs();
+                        loadTresorerieData();
+                        showNotification(`Import reussi: ${importedData.length} mois`, "success");
+                    } else {
+                        showNotification("Aucune donnee valide", "error");
+                    }
+                } catch(err) {
+                    showNotification("Erreur lors de l'import", "error");
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // ============================================================
+        // UTILS
+        // ============================================================
+        function updateKPIs() {
+            const encTotal = APP_DATA.tresorerieMensuelle.reduce((s,i) => s + i.encaissements, 0);
+            const depTotal = APP_DATA.tresorerieMensuelle.reduce((s,i) => s + i.depenses, 0);
+            APP_DATA.kpis.encaissementsTotal = encTotal;
+            APP_DATA.kpis.depensesTotal = depTotal;
+            APP_DATA.kpis.netTresorerie = encTotal - depTotal;
+            
+            // Mettre a jour data.js global
+            if (window.APP_DATA) {
+                window.APP_DATA.kpis = APP_DATA.kpis;
+            }
+        }
+
+        function showNotification(message, type = "info") {
+            const notif = document.createElement('div');
+            notif.style.cssText = `position:fixed; bottom:20px; right:20px; background:${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'}; color:white; padding:12px 20px; border-radius:8px; font-size:13px; z-index:2000`;
+            notif.innerText = message;
+            document.body.appendChild(notif);
+            setTimeout(() => notif.remove(), 2500);
+        }
+
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+    </script>
+</body>
+</html>
