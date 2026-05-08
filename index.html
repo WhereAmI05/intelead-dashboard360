@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intelead Finance - Executive Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Styles supplémentaires spécifiques au dashboard */
+        .dashboard-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            border: 1px solid #e9ecf2;
+            transition: all 0.2s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+        }
+        
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .stat-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: 600;
+        }
+        
+        .stat-icon.income { background: #d1fae5; color: #10b981; }
+        .stat-icon.expense { background: #fee2e2; color: #dc2626; }
+        .stat-icon.budget { background: #dbeafe; color: #3b82f6; }
+        .stat-icon.nora { background: #fef3c7; color: #f59e0b; }
+        
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 4px;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #64748b;
+            font-weight: 500;
+        }
+        
+        .stat-trend {
+            font-size: 11px;
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .trend-up { color: #10b981; }
+        .trend-down { color: #ef4444; }
+        
+        /* Quick Access Bar */
+        .quick-access-bar {
+            background: white;
+            border-radius: 16px;
+            padding: 16px 24px;
+            margin-bottom: 28px;
+            border: 1px solid #e9ecf2;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        
+        .quick-access-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #1e293b;
+        }
+        
+        .quick-access-title i {
+            margin-right: 8px;
+            color: #3b82f6;
+        }
+        
+        .quick-access-buttons {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        
+        .quick-btn {
+            padding: 8px 20px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 40px;
+            font-size: 12px;
+            font-weight: 500;
+            color: #475569;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .quick-btn:hover {
+            background: #3b82f6;
+            border-color: #3b82f6;
+            color: white;
+        }
+        
+        /* Widgets */
+        .widgets-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 28px;
+        }
+        
+        .widget {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            border: 1px solid #e9ecf2;
+        }
+        
+        .widget-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        
+        .widget-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1e293b;
+        }
+        
+        .widget-title i {
+            margin-right: 8px;
+            color: #3b82f6;
+        }
+        
+        .widget-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #0f3b5c;
+            margin-bottom: 8px;
+        }
+        
+        .widget-sub {
+            font-size: 12px;
+            color: #64748b;
+        }
+        
+        /* Progress bar */
+        .progress-bar-container {
+            background: #e2e8f0;
+            border-radius: 10px;
+            height: 8px;
+            overflow: hidden;
+            margin: 12px 0;
+        }
+        
+        .progress-bar {
+            background: #3b82f6;
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.3s;
+        }
+        
+        .progress-bar.warning { background: #f59e0b; }
+        .progress-bar.danger { background: #ef4444; }
+        
+        /* Alert cards */
+        .alert-card {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            border: 1px solid #e9ecf2;
+            margin-bottom: 28px;
+        }
+        
+        .alert-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+        
+        .alert-item {
+            padding: 12px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .alert-item.danger { background: #fef2f2; }
+        .alert-item.warning { background: #fffbeb; }
+        .alert-item.info { background: #eff6ff; }
+        
+        .alert-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+        
+        .alert-icon.danger { background: #fee2e2; color: #dc2626; }
+        .alert-icon.warning { background: #fef3c7; color: #f59e0b; }
+        .alert-icon.info { background: #dbeafe; color: #3b82f6; }
+        
+        .alert-text { font-size: 12px; font-weight: 500; }
+        .alert-text strong { display: block; font-size: 13px; margin-bottom: 2px; }
+        
+        /* Client table */
+        .client-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .client-table th {
+            text-align: left;
+            padding: 12px 8px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #64748b;
+            border-bottom: 1px solid #e9ecf2;
+        }
+        
+        .client-table td {
+            padding: 10px 8px;
+            font-size: 13px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        
+        .client-name {
+            font-weight: 600;
+            color: #1e293b;
+        }
+        
+        .client-amount {
+            font-weight: 500;
+            color: #0f3b5c;
+        }
+        
+        @media (max-width: 1024px) {
+            .dashboard-stats { grid-template-columns: repeat(2,1fr); }
+            .widgets-row { grid-template-columns: 1fr; }
+            .alert-grid { grid-template-columns: 1fr; }
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard-stats { grid-template-columns: 1fr; }
+            .quick-access-bar { flex-direction: column; align-items: stretch; text-align: center; }
+            .quick-access-buttons { justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <h2>FinancePilot 360</h2>
+                    <p>by Intelead SARL</p>
+                </div>
+            </div>
+            <nav class="nav-menu">
+                <a href="dashboard.html" class="nav-item active">Tableau de bord</a>
+                <a href="regul.html" class="nav-item">Regulation</a>
+                <a href="salesx.html" class="nav-item">SalesX</a>
+                <a href="nora.html" class="nav-item">NORA</a>
+                <a href="tresorerie.html" class="nav-item">Tresorerie</a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <div>
+                    <h1>Executive Dashboard</h1>
+                    <p>Vue d'ensemble de la performance financiere</p>
+                </div>
+                <div class="intelead-badge">
+                    Intelead SARL - Casablanca
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="dashboard-stats" id="statsGrid"></div>
+
+            <!-- Quick Access Bar (EN HAUT) -->
+            <div class="quick-access-bar">
+                <div class="quick-access-title">
+                    <i>🚀</i> Acces rapide
+                </div>
+                <div class="quick-access-buttons">
+                    <a href="regul.html" class="quick-btn">Obligations fiscales</a>
+                    <a href="salesx.html" class="quick-btn">Budget SalesX</a>
+                    <a href="nora.html" class="quick-btn">Factures NORA</a>
+                    <a href="tresorerie.html" class="quick-btn">Tresorerie detaillee</a>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div class="widgets-row">
+                <div class="widget">
+                    <div class="widget-header">
+                        <div class="widget-title">
+                            <i>📊</i> Repartition des depenses
+                        </div>
+                        <span style="font-size:11px; color:#94a3b8">Par categorie</span>
+                    </div>
+                    <canvas id="depensesChart" height="200"></canvas>
+                </div>
+                <div class="widget">
+                    <div class="widget-header">
+                        <div class="widget-title">
+                            <i>📈</i> Evolution de la tresorerie
+                        </div>
+                        <span style="font-size:11px; color:#94a3b8">2024-2025</span>
+                    </div>
+                    <canvas id="trendChart" height="200"></canvas>
+                </div>
+            </div>
+
+            <!-- Budget Overview Widget -->
+            <div class="widgets-row">
+                <div class="widget">
+                    <div class="widget-header">
+                        <div class="widget-title">
+                            <i>🎯</i> Budget SalesX
+                        </div>
+                        <span style="font-size:11px; color:#94a3b8">Consommation</span>
+                    </div>
+                    <div class="widget-value" id="budgetTotal">0 MAD</div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" id="budgetProgress" style="width:0%"></div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-top: 8px;">
+                        <span class="widget-sub">Realise: <strong id="budgetRealise">0 MAD</strong></span>
+                        <span class="widget-sub">Restant: <strong id="budgetReste">0 MAD</strong></span>
+                    </div>
+                </div>
+                <div class="widget">
+                    <div class="widget-header">
+                        <div class="widget-title">
+                            <i>🎓</i> NORA Academie
+                        </div>
+                        <span style="font-size:11px; color:#94a3b8">Encaissement</span>
+                    </div>
+                    <div class="widget-value" id="noraCa">0 MAD</div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" id="noraProgress" style="width:0%"></div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-top: 8px;">
+                        <span class="widget-sub">Encaissé: <strong id="noraEncaisse">0 MAD</strong></span>
+                        <span class="widget-sub">Reste: <strong id="noraReste">0 MAD</strong></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alert Cards (sans pricing SalesX) -->
+            <div class="alert-card">
+                <div class="widget-header">
+                    <div class="widget-title">
+                        <i>⚠️</i> Alertes operationnelles
+                    </div>
+                    <span style="font-size:11px; color:#94a3b8">Actions recommandees</span>
+                </div>
+                <div class="alert-grid" id="alertsGrid"></div>
+            </div>
+
+            <!-- Top Clients -->
+            <div class="widget">
+                <div class="widget-header">
+                    <div class="widget-title">
+                        <i>🏆</i> Top clients
+                    </div>
+                    <span style="font-size:11px; color:#94a3b8">Encaissements 2024-2025</span>
+                </div>
+                <table class="client-table">
+                    <thead>
+                        <tr><th>Client</th><th>2024</th><th>2025</th><th>Total</th></tr>
+                    </thead>
+                    <tbody id="topClientsBody"></tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <script src="data.js"></script>
+    <script>
+        // Chart instances
+        let depensesChart, trendChart;
+        
+        // Fonction pour mettre a jour toutes les donnees du dashboard
+        function refreshDashboard() {
+            // Mettre a jour les KPIs globaux
+            updateKPIsFromData();
+            
+            // Mettre a jour les stats cards
+            updateStatsCards();
+            
+            // Mettre a jour les widgets SalesX et NORA
+            updateSalesXWidget();
+            updateNoraWidget();
+            
+            // Mettre a jour les alertes
+            updateAlerts();
+            
+            // Mettre a jour les top clients
+            updateTopClients();
+            
+            // Mettre a jour les graphiques
+            updateCharts();
+        }
+        
+        // Recalculer les KPIs a partir des donnees actuelles
+        function updateKPIsFromData() {
+            // Tresorerie
+            const encTotal = APP_DATA.tresorerieMensuelle.reduce((s,i) => s + i.encaissements, 0);
+            const depTotal = APP_DATA.tresorerieMensuelle.reduce((s,i) => s + i.depenses, 0);
+            APP_DATA.kpis.encaissementsTotal = encTotal;
+            APP_DATA.kpis.depensesTotal = depTotal;
+            APP_DATA.kpis.netTresorerie = encTotal - depTotal;
+            
+            // SalesX
+            const totalBudget = APP_DATA.salesxBudget.reduce((s,i) => s + i.budget, 0);
+            const totalRealise = APP_DATA.salesxBudget.reduce((s,i) => s + i.realise, 0);
+            APP_DATA.kpis.budgetSalesX = totalBudget;
+            APP_DATA.kpis.consommationSalesX = (totalRealise / totalBudget * 100).toFixed(1);
+            
+            // NORA
+            const caTotal = APP_DATA.noraFactures.reduce((s,i) => s + i.caHt, 0);
+            const encaisseTotal = APP_DATA.noraFactures.reduce((s,i) => s + i.encaisse, 0);
+            APP_DATA.kpis.caNoraTotal = caTotal;
+            APP_DATA.kpis.resteNora = caTotal - encaisseTotal;
+        }
+        
+        function updateStatsCards() {
+            const kpis = APP_DATA.kpis;
+            const net2024 = APP_DATA.tresorerieMensuelle.filter(t => t.mois.includes('2024')).reduce((s,i) => s + (i.encaissements - i.depenses), 0);
+            const net2025 = APP_DATA.tresorerieMensuelle.filter(t => t.mois.includes('2025')).reduce((s,i) => s + (i.encaissements - i.depenses), 0);
+            
+            const statsHtml = `
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon income">↑</div>
+                    </div>
+                    <div class="stat-value">${kpis.encaissementsTotal.toLocaleString()} MAD</div>
+                    <div class="stat-label">Encaissements totaux</div>
+                    <div class="stat-trend"><span class="trend-up">▲ ${net2024 > 0 ? '+' : ''}${net2024.toLocaleString()} MAD</span> en 2024</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon expense">↓</div>
+                    </div>
+                    <div class="stat-value">${kpis.depensesTotal.toLocaleString()} MAD</div>
+                    <div class="stat-label">Depenses totales</div>
+                    <div class="stat-trend"><span class="trend-down">▼ ${net2025 < 0 ? '-' : ''}${Math.abs(net2025).toLocaleString()} MAD</span> en 2025</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon budget">💰</div>
+                    </div>
+                    <div class="stat-value">${kpis.netTresorerie.toLocaleString()} MAD</div>
+                    <div class="stat-label">Tresorerie nette</div>
+                    <div class="stat-trend"><span class="${kpis.netTresorerie >= 0 ? 'trend-up' : 'trend-down'}">${kpis.netTresorerie >= 0 ? 'Excedent global' : 'Deficit global'}</span></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon nora">🎓</div>
+                    </div>
+                    <div class="stat-value">${kpis.budgetSalesX.toLocaleString()} MAD</div>
+                    <div class="stat-label">Budget SalesX</div>
+                    <div class="progress-bar-container" style="margin-top:8px">
+                        <div class="progress-bar" style="width:${kpis.consommationSalesX}%"></div>
+                    </div>
+                    <div class="stat-trend">Consommation: ${kpis.consommationSalesX}%</div>
+                </div>
+            `;
+            document.getElementById('statsGrid').innerHTML = statsHtml;
+        }
+        
+        function updateSalesXWidget() {
+            const totalBudget = APP_DATA.salesxBudget.reduce((s,i) => s + i.budget, 0);
+            const totalRealise = APP_DATA.salesxBudget.reduce((s,i) => s + i.realise, 0);
+            const consoPct = (totalRealise / totalBudget * 100).toFixed(1);
+            
+            document.getElementById('budgetTotal').innerHTML = totalBudget.toLocaleString() + ' MAD';
+            document.getElementById('budgetRealise').innerHTML = totalRealise.toLocaleString() + ' MAD';
+            document.getElementById('budgetReste').innerHTML = (totalBudget - totalRealise).toLocaleString() + ' MAD';
+            
+            const progressBar = document.getElementById('budgetProgress');
+            progressBar.style.width = consoPct + '%';
+            progressBar.classList.remove('warning', 'danger');
+            if (consoPct > 80) progressBar.classList.add('danger');
+            else if (consoPct > 60) progressBar.classList.add('warning');
+        }
+        
+        function updateNoraWidget() {
+            const caTotal = APP_DATA.noraFactures.reduce((s,i) => s + i.caHt, 0);
+            const encaisseTotal = APP_DATA.noraFactures.reduce((s,i) => s + i.encaisse, 0);
+            const tauxEnc = (encaisseTotal / caTotal * 100).toFixed(1);
+            
+            document.getElementById('noraCa').innerHTML = caTotal.toLocaleString() + ' MAD';
+            document.getElementById('noraEncaisse').innerHTML = encaisseTotal.toLocaleString() + ' MAD';
+            document.getElementById('noraReste').innerHTML = (caTotal - encaisseTotal).toLocaleString() + ' MAD';
+            
+            const noraProgress = document.getElementById('noraProgress');
+            noraProgress.style.width = tauxEnc + '%';
+            noraProgress.classList.remove('warning', 'danger');
+            if (tauxEnc < 50) noraProgress.classList.add('danger');
+            else if (tauxEnc < 70) noraProgress.classList.add('warning');
+        }
+        
+        function updateAlerts() {
+            const nbCritical = APP_DATA.obligations.filter(o => o.risque === 'critical').length;
+            const resteNora = APP_DATA.kpis.resteNora;
+            const net2025 = APP_DATA.tresorerieMensuelle.filter(t => t.mois.includes('2025')).reduce((s,i) => s + (i.encaissements - i.depenses), 0);
+            
+            let alertsHtml = `
+                <div class="alert-item danger">
+                    <div class="alert-icon danger">!</div>
+                    <div class="alert-text"><strong>${nbCritical} obligations critiques</strong>Bilans 2024 non declares - Action urgente</div>
+                </div>
+                <div class="alert-item warning">
+                    <div class="alert-icon warning">💰</div>
+                    <div class="alert-text"><strong>${resteNora.toLocaleString()} MAD a encaisser</strong>Factures NORA impayees</div>
+                </div>
+            `;
+            
+            if (net2025 < 0) {
+                alertsHtml += `
+                    <div class="alert-item warning">
+                        <div class="alert-icon warning">📉</div>
+                        <div class="alert-text"><strong>Net 2025 negatif</strong>Tresorerie en baisse de ${Math.abs(net2025).toLocaleString()} MAD</div>
+                    </div>
+                `;
+            }
+            
+            document.getElementById('alertsGrid').innerHTML = alertsHtml;
+        }
+        
+        function updateTopClients() {
+            document.getElementById('topClientsBody').innerHTML = APP_DATA.topClients.slice(0,5).map(c => `
+                <tr>
+                    <td class="client-name">${c.client}</td>
+                    <td class="client-amount">${c.montant2024.toLocaleString()} MAD</td>
+                    <td class="client-amount">${c.montant2025.toLocaleString()} MAD</td>
+                    <td class="client-amount"><strong>${c.total.toLocaleString()} MAD</strong></td>
+                </tr>
+            `).join('');
+        }
+        
+        function updateCharts() {
+            // Depenses chart
+            const ctxDep = document.getElementById('depensesChart').getContext('2d');
+            if (depensesChart) depensesChart.destroy();
+            depensesChart = new Chart(ctxDep, {
+                type: 'doughnut',
+                data: {
+                    labels: APP_DATA.depensesCategories.map(c => c.categorie),
+                    datasets: [{
+                        data: APP_DATA.depensesCategories.map(c => c.montant),
+                        backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec489a', '#06b6d4', '#6b7280'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    cutout: '60%',
+                    plugins: {
+                        legend: { position: 'right', labels: { font: { size: 10 }, boxWidth: 10 } },
+                        tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${ctx.raw.toLocaleString()} MAD` } }
+                    }
+                }
+            });
+            
+            // Trend chart (12 derniers mois)
+            const last12 = APP_DATA.tresorerieMensuelle.slice(-12);
+            const ctxTrend = document.getElementById('trendChart').getContext('2d');
+            if (trendChart) trendChart.destroy();
+            trendChart = new Chart(ctxTrend, {
+                type: 'line',
+                data: {
+                    labels: last12.map(t => t.mois),
+                    datasets: [
+                        { label: 'Encaissements', data: last12.map(t => t.encaissements), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.05)', fill: true, tension: 0.4, pointRadius: 3, pointBackgroundColor: '#10b981' },
+                        { label: 'Depenses', data: last12.map(t => t.depenses), borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.05)', fill: true, tension: 0.4, pointRadius: 3, pointBackgroundColor: '#ef4444' }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: { legend: { position: 'top', labels: { font: { size: 10 } } } },
+                    scales: { y: { ticks: { callback: (v) => (v/1000).toFixed(0) + 'k' } } }
+                }
+            });
+        }
+        
+        // Initial load and setup auto-refresh
+        document.addEventListener('DOMContentLoaded', function() {
+            refreshDashboard();
+            
+            // Rafraichir toutes les 5 secondes (optionnel)
+            // setInterval(refreshDashboard, 5000);
+        });
+        
+        // Exposer refreshDashboard globalement pour qu'il puisse etre appele depuis d'autres pages
+        window.refreshDashboard = refreshDashboard;
+    </script>
+</body>
+</html>
